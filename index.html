@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片拼接</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            padding: 70px 20px 20px;
+            margin: 0;
+        }
+        .btn-wrap {
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, .8);
+        }
+        #input {
+            display: none;
+        }
+        .input-btn, .save-btn {
+           color: #fff;
+           padding: 4px 6px 5px;
+           border-radius: 4px;
+           font-size: 16px;
+           cursor: pointer;
+           min-width: 100px;
+           outline: none;
+        }
+        .input-btn:hover, .save-btn:hover {
+            opacity: .8;
+            transition: opacity .5s;
+        }
+        .input-btn {
+            background-color: #2ea44f;
+        }
+        .save-btn {
+            background-color: #cb2431;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="btn-wrap">
+        <label class="input-btn" for="input">添加图片（多选）</label>
+        <input type="file" name="input" id="input" multiple>
+        <button class="save-btn" id="btn">保存</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        var $input = document.getElementById('input')
+        var $btn = document.getElementById('btn')
+        var $canvas = document.getElementById('canvas')
+        var context = canvas.getContext('2d')
+        
+        $input.oninput = function() {
+            const files = Array.prototype.slice.call(this.files)
+
+            drawCanvas(context, files)
+
+            if (window.utools) utools.showMainWindow()
+        }
+
+        $btn.onclick = function() {
+            var $a = document.createElement('a')
+            $a.href = canvas.toDataURL('image/png')
+            $a.download = 'long.png'
+            $a.click()
+        }
+
+        function drawCanvas(ctx, files) {
+            const q = []
+            let height = 0
+            let len = 0
+
+            files.forEach((file) => {
+                const img = new Image()
+                img.src = getObjectURL(file)
+                
+                img.onload = function() {
+                    const h = height
+
+                    if (len === 0) $canvas.width = img.width
+                    
+                    if ($canvas.width !== img.width) {
+                        const ratio = $canvas.width / img.width
+                        img.width = $canvas.width
+                        img.height = img.height * ratio
+                    }
+
+                    q.push(function() {
+                        ctx.drawImage(img, 0, h, img.width, img.height)
+                    })
+
+                    height += img.height
+                    len++
+                    
+                    if (len >= files.length) {
+                        $canvas.height = height
+                        q.forEach(f => f())
+                    }
+                }
+            });
+        }
+
+        function getObjectURL(file) {
+            var url = null ;
+            if (window.createObjectURL!=undefined) { // basic
+                url = window.createObjectURL(file) ;
+            } else if (window.URL!=undefined) { // mozilla(firefox)
+                url = window.URL.createObjectURL(file) ;
+            } else if (window.webkitURL!=undefined) { // webkit or chrome
+                url = window.webkitURL.createObjectURL(file) ;
+            }
+            return url ;
+        }
+    </script>
+</body>
+</html>
