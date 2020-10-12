@@ -9,14 +9,30 @@
         * {
             box-sizing: border-box;
         }
-
         body {
             padding: 70px 20px 20px;
             margin: 0;
         }
+
+        #canvas {
+            position: fixed;
+            left: 100%;
+        }
+
+        .img-wrap {
+            display: flex;
+            flex-direction: column;
+            width: 400px;
+            will-change: auto;
+            margin: 0 auto;
+        }
+        .img-wrap > img {
+            width: 100%;
+            height: auto;
+        }
+
         .btn-wrap {
             display: flex;
-            justify-content: space-between;
             position: fixed;
             width: 100%;
             top: 0;
@@ -26,6 +42,9 @@
         }
         #input {
             display: none;
+        }
+        #range {
+            outline: none;
         }
         .input-btn, .save-btn {
            color: #fff;
@@ -46,37 +65,81 @@
         .save-btn {
             background-color: #cb2431;
             border: none;
+            justify-self: self-end;
         }
     </style>
+    <script src="./utils.js"></script>
 </head>
 <body>
     <div class="btn-wrap">
-        <label class="input-btn" for="input">添加图片（多选）</label>
-        <input type="file" name="input" id="input" multiple>
+        <div>
+            <label class="input-btn" for="input">添加图片（多选）</label>
+            <input type="file" id="input" multiple>
+        </div>
+        <input type="range" min="-90" id="range">
         <button class="save-btn" id="btn">保存</button>
     </div>
+
+    <div class="img-wrap"></div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        var $input = document.getElementById('input')
-        var $btn = document.getElementById('btn')
-        var $canvas = document.getElementById('canvas')
-        var context = canvas.getContext('2d')
+        const $fileInput = $('#input')
+        const $btn = $('#btn')
+        const $canvas = $('#canvas')
+        const $imgWrap = $('.img-wrap')
+        const $rangeInput = $('#range')
+        const context = canvas.getContext('2d')
+
+        const wrapWidth = $imgWrap.offsetWidth
+        let wrapHeight = $imgWrap.offsetHeight
         
-        $input.oninput = function() {
+        $fileInput.oninput = function() {
             const files = Array.prototype.slice.call(this.files)
 
-            drawCanvas(context, files)
+            // drawCanvas(context, files)
+            setImgs($imgWrap, files, () => {
+                wrapHeight = $imgWrap.offsetHeight
+            })
 
             if (window.utools) utools.showMainWindow()
         }
 
+        const rangeInputFn = throttle(function(e) {
+            const ratio = this.value / 100 + 1
+            console.log(wrapHeight)
+            $imgWrap.style.width = wrapWidth * ratio + 'px'
+        }, 50)
+        $rangeInput.oninput = function(e) {
+            const ratio = this.value / 100 + 1
+            console.log(wrapHeight)
+            $imgWrap.style.width = wrapWidth * ratio + 'px'
+        }
+
         $btn.onclick = function() {
-            var $a = document.createElement('a')
+            const $a = document.createElement('a')
             $a.href = canvas.toDataURL('image/png')
             $a.download = 'long.png'
             $a.click()
+        }
+
+        function setImgs($wrap, files, afterAllImgLoaded) {
+            let len = 0
+
+            files.forEach((file) => {
+                const $img = document.createElement('img')
+                $img.src = getObjectURL(file)
+                $wrap.appendChild($img)
+
+                $img.onload = () => {
+                    len++
+
+                    if (len >= files.length) {
+                        afterAllImgLoaded()
+                    }
+                }
+            })
         }
 
         function drawCanvas(ctx, files) {
@@ -114,17 +177,7 @@
             });
         }
 
-        function getObjectURL(file) {
-            var url = null ;
-            if (window.createObjectURL!=undefined) { // basic
-                url = window.createObjectURL(file) ;
-            } else if (window.URL!=undefined) { // mozilla(firefox)
-                url = window.URL.createObjectURL(file) ;
-            } else if (window.webkitURL!=undefined) { // webkit or chrome
-                url = window.webkitURL.createObjectURL(file) ;
-            }
-            return url ;
-        }
+        
     </script>
 </body>
 </html>
