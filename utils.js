@@ -1,5 +1,5 @@
 const $ = document.querySelector.bind(document)
-const $all = document.querySelectorAll
+const $all = document.querySelectorAll.bind(document)
 
 function getObjectURL(file) {
   var url = null ;

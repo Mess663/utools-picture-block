@@ -1,183 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片拼接</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+* {
+  box-sizing: border-box;
+}
         body {
-            padding: 70px 20px 20px;
-            margin: 0;
+          padding: 70px 20px 20px;
+          margin: 0;
         }
 
         #canvas {
-            position: fixed;
-            left: 100%;
+          position: fixed;
+          /* left: 100%; */
         }
 
         .img-wrap {
-            display: flex;
-            flex-direction: column;
-            width: 400px;
-            will-change: auto;
-            margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          width: 400px;
+          will-change: auto;
+          margin: 0 auto;
         }
         .img-wrap > img {
-            width: 100%;
-            height: auto;
+          width: 100%;
+          height: auto;
         }
 
         .btn-wrap {
-            display: flex;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            left: 0;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, .8);
+          display: flex;
+          position: fixed;
+          width: 100%;
+          top: 0;
+          left: 0;
+          padding: 20px;
+          background-color: rgba(255, 255, 255, .8);
         }
         #input {
-            display: none;
+          display: none;
         }
         #range {
-            outline: none;
+          outline: none;
         }
         .input-btn, .save-btn {
-           color: #fff;
-           padding: 4px 6px 5px;
-           border-radius: 4px;
-           font-size: 16px;
-           cursor: pointer;
-           min-width: 100px;
-           outline: none;
+          color: #fff;
+          padding: 4px 6px 5px;
+          border-radius: 4px;
+          font-size: 16px;
+          cursor: pointer;
+          min-width: 100px;
+          outline: none;
         }
         .input-btn:hover, .save-btn:hover {
-            opacity: .8;
-            transition: opacity .5s;
+          opacity: .8;
+          transition: opacity .5s;
         }
         .input-btn {
-            background-color: #2ea44f;
+          background-color: #2ea44f;
         }
         .save-btn {
-            background-color: #cb2431;
-            border: none;
-            justify-self: self-end;
+          background-color: #cb2431;
+          border: none;
+          justify-self: self-end;
         }
     </style>
     <script src="./utils.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="btn-wrap">
-        <div>
-            <label class="input-btn" for="input">添加图片（多选）</label>
-            <input type="file" id="input" multiple>
-        </div>
-        <input type="range" min="-90" id="range">
-        <button class="save-btn" id="btn">保存</button>
+      <div>
+        <label class="input-btn" for="input">添加图片（多选）</label>
+        <input type="file" id="input" multiple>
+      </div>
+      <input type="range" min="-90" id="range">
+      <button class="save-btn" id="save">保存</button>
     </div>
 
     <div class="img-wrap"></div>
 
     <canvas id="canvas"></canvas>
 
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/1.0.0/FileSaver.min.js"></script> -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/rxjs/6.6.3/rxjs.umd.min.js"></script>
     <script>
-        const $fileInput = $('#input')
-        const $btn = $('#btn')
-        const $canvas = $('#canvas')
-        const $imgWrap = $('.img-wrap')
-        const $rangeInput = $('#range')
-        const context = canvas.getContext('2d')
+      const $fileInput = $('#input')
+            const $save = $('#save')
+            const $canvas = $('#canvas')
+            const $imgWrap = $('.img-wrap')
+            const $rangeInput = $('#range')
+            const context = canvas.getContext('2d')
 
-        const wrapWidth = $imgWrap.offsetWidth
-        let wrapHeight = $imgWrap.offsetHeight
-        
-        $fileInput.oninput = function() {
-            const files = Array.prototype.slice.call(this.files)
+            const wrapWidth = $imgWrap.offsetWidth
+            let wrapHeight = $imgWrap.offsetHeight
 
-            // drawCanvas(context, files)
-            setImgs($imgWrap, files, () => {
-                wrapHeight = $imgWrap.offsetHeight
-            })
+            $fileInput.oninput = function() {
+                    const files = Array.prototype.slice.call(this.files)
 
-            if (window.utools) utools.showMainWindow()
-        }
+                    // drawCanvas(context, files)
+                    setImgs($imgWrap, files, (imgs) => {
+                            wrapHeight = $imgWrap.offsetHeight
+                          })
 
-        const rangeInputFn = throttle(function(e) {
-            const ratio = this.value / 100 + 1
-            console.log(wrapHeight)
-            $imgWrap.style.width = wrapWidth * ratio + 'px'
-        }, 50)
-        $rangeInput.oninput = function(e) {
-            const ratio = this.value / 100 + 1
-            console.log(wrapHeight)
-            $imgWrap.style.width = wrapWidth * ratio + 'px'
-        }
+                    // if (window.utools) utools.showMainWindow()
+                  }
 
-        $btn.onclick = function() {
-            const $a = document.createElement('a')
-            $a.href = canvas.toDataURL('image/png')
-            $a.download = 'long.png'
-            $a.click()
-        }
+            const rangeInputFn = throttle(function(e) {
+                    const ratio = this.value / 100 + 1
+                    $imgWrap.style.width = wrapWidth * ratio + 'px'
+                  }, 50)
 
-        function setImgs($wrap, files, afterAllImgLoaded) {
-            let len = 0
+            $rangeInput.oninput = function(e) {
+                    const ratio = this.value / 100 + 1
+                    $imgWrap.style.width = wrapWidth * ratio + 'px'
+                  }
 
-            files.forEach((file) => {
-                const $img = document.createElement('img')
-                $img.src = getObjectURL(file)
-                $wrap.appendChild($img)
+            $save.onclick = function() {
+                    drawCanvas(context, [...$all('.img-wrap img')])
+                    const $a = document.createElement('a')
+                    $a.href = canvas.toDataURL('image/png')
+                    $a.download = 'long.png'
+                    $a.click()
+                  }
 
-                $img.onload = () => {
-                    len++
+            // $('#canvas').toBlob(function(blob) {
+            //     window.saveAs(blob, "pretty image.png");
+            // })
 
-                    if (len >= files.length) {
-                        afterAllImgLoaded()
-                    }
-                }
-            })
-        }
 
-        function drawCanvas(ctx, files) {
-            const q = []
-            let height = 0
-            let len = 0
+            function setImgs($wrap, files, afterAllImgLoaded) {
+                    let len = 0
 
-            files.forEach((file) => {
-                const img = new Image()
-                img.src = getObjectURL(file)
-                
-                img.onload = function() {
-                    const h = height
+                    files.forEach((file) => {
+                            const $img = document.createElement('img')
+                            $img.src = getObjectURL(file)
+                            $wrap.appendChild($img)
 
-                    if (len === 0) $canvas.width = img.width
-                    
-                    if ($canvas.width !== img.width) {
-                        const ratio = $canvas.width / img.width
-                        img.width = $canvas.width
-                        img.height = img.height * ratio
-                    }
+                            $img.onload = () => {
+                                    len++
 
-                    q.push(function() {
-                        ctx.drawImage(img, 0, h, img.width, img.height)
-                    })
+                                    if (len >= files.length) {
+                                            afterAllImgLoaded([...$wrap.children])
+                                          }
+                                  }
+                          })
 
-                    height += img.height
-                    len++
-                    
-                    if (len >= files.length) {
-                        $canvas.height = height
-                        q.forEach(f => f())
-                    }
-                }
-            });
-        }
+                  }
 
-        
+            function drawCanvas(ctx, imgs) {
+                    const q = []
+                    let height = 0
+                    let len = 0
+
+                    imgs.forEach((img) => {
+                            const h = height
+
+                            if (len === 0) $canvas.width = img.width
+
+                            if ($canvas.width !== img.width) {
+                                    const ratio = $canvas.width / img.width
+                                    img.width = $canvas.width
+                                    img.height = img.height * ratio
+                                  }
+
+                            q.push(function() {
+                                    ctx.drawImage(img, 0, h, img.width, img.height)
+                                  })
+
+                            height += img.height
+                            len++
+
+                            if (len >= imgs.length) {
+                                    $canvas.height = height
+                                    q.forEach(f => f())
+                                  }
+                          });
+                  }
+            
+            funcion sortImg() {
+
+                  }
     </script>
-</body>
+  </body>
 </html>
