@@ -17,10 +17,6 @@
     </div>
 
     <div class="img-wrap">
-     <!-- <img src="./img/1.jpeg" />
-      <img src="./img/2.jpeg" />
-      <img src="./img/3.png" />
-     -->
     </div>
 
     <canvas id="canvas"></canvas>
@@ -44,10 +40,10 @@
 
             const srcList = ['./img/1.jpeg', './img/2.jpeg', './img/3.png']
 
-            setImgs($imgWrap, srcList, (imgs) => {
-                wrapHeight = $imgWrap.offsetHeight
-            })
-
+            //setImgs($imgWrap, srcList, (imgs) => {
+            //    wrapHeight = $imgWrap.offsetHeight
+            //})
+            
             $fileInput.oninput = function() {
                     const files = Array.prototype.slice.call(this.files)
                     // drawCanvas(context, files)
@@ -61,13 +57,15 @@
             const rangeInputFn = throttle(function(e) {
                     const ratio = this.value / 100 + 1
                     $imgWrap.style.width = wrapWidth * ratio + 'px'
-                    oImgList.arrange()
+                  
+                    const h = oImgList.arrange()
+                    $imgWrap.style.height = h + 'px'
                   }, 50)
 
             $rangeInput.oninput = rangeInputFn
 
             $save.onclick = function() {
-                    drawCanvas(context, [...$all('.img-wrap img')])
+                    drawCanvas(context, oImgList.getDomList()) 
                     const $a = document.createElement('a')
                     $a.href = canvas.toDataURL('image/png')
                     $a.download = 'long.png'
@@ -89,7 +87,8 @@
                           })
 
                     await oImgList.allLoaded()
-                    oImgList.arrange()
+                    const h = oImgList.arrange()
+                    $imgWrap.style.height = h + 'px'
                   }
 
             function drawCanvas(ctx, imgs) {
@@ -98,18 +97,14 @@
                     let len = 0
 
                     imgs.forEach((img) => {
-                            const h = height
-
-                            if (len === 0) $canvas.width = img.width
-
-                            if ($canvas.width !== img.width) {
-                                    const ratio = $canvas.width / img.width
-                                    img.width = $canvas.width
-                                    img.height = img.height * ratio
-                                  }
+                            const top = height
+                            const w = img.offsetWidth 
+                            const h = img.offsetHeight
+ 
+                            if (len === 0) $canvas.width = w 
 
                             q.push(function() {
-                                    ctx.drawImage(img, 0, h, img.width, img.height)
+                                    ctx.drawImage(img, 0, top, w, h)
                                   })
 
                             height += img.height

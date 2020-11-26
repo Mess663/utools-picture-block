@@ -14,12 +14,15 @@ class ImgItem {
     return this.dom
   }
 
-  isNearCover(top, left) {
-    if (top) {
-      return Math.abs(top - this.top) < (this.height / 2) 
-    } else {
-      return Math.abs(left - this.left) < (this.width /2)
-    }
+  isNearCover(top, bottom) {
+    const half = this.top + this.height / 2
+    if (top < this.top) return bottom > half
+    else return top < half
+  }
+
+  toggleMoving() {
+    const c = 'moving'
+    this.dom.classList.toggle(c)
   }
 
   resize(top, isExec) {
@@ -60,8 +63,12 @@ class ImgItem {
   }
 
   async loaded() {
+    if (this._loaded) return Promise.resolve()
     return new Promise((resolve) => {
-      this.dom.addEventListener('load', resolve)
+      this.dom.addEventListener('load', () => {
+        this._loaded = true
+        resolve()
+      })
     })
   }
 }
@@ -77,12 +84,15 @@ class ImgList {
     this.offsetPos = {}
   }
 
+  getDomList() {
+    return this.list.map(item => item.getDom())
+  }
+
   startMove(i, offsetPos) {
     this.current = this.list[i]
-    this.current.dom.style.transition = 'none';
     this.index = i
-    this.current.zIndex(1)
     this.offsetPos = offsetPos
+    this.current.toggleMoving()
   }
 
   findIndex(dom) {
@@ -91,8 +101,7 @@ class ImgList {
 
   completeMove(e) {
     this.getCurrent().storePos()
-    this.current.zIndex(0)
-    this.current.dom.style.transition = '.2s top';
+    this.current.toggleMoving()
     this.index = -1
     this.arrange()
   }
@@ -113,10 +122,9 @@ class ImgList {
   
   sort() {
     const top = this.current.dom.offsetTop
-    console.log(top)
-    const coverIndex = this.list.findIndex((item, i) => item.dom !== this.current.dom && item.isNearCover(top)) 
+    const h = this.current.height 
+    const coverIndex = this.list.findIndex((item, i) => item.dom !== this.current.dom && item.isNearCover(top, top + h)) 
     if (coverIndex >= 0) {
-    console.log('----index', coverIndex,this.index)
       const beCovered = this.list[coverIndex]
       this.list[coverIndex] = this.current
       this.list[this.index] = beCovered
@@ -131,6 +139,7 @@ class ImgList {
       return item.resize(top, true)
     }, 0)
     this.wrapH = wrapH
+    return wrapH
   }
 
   async allLoaded() {
